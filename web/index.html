@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>库存呆滞分析与处置</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1>库存呆滞分析与处置</h1>
+          <p class="sub">入库 · 销售 · 退货 · 替代品 · 保质期 · 多渠道可用量口径</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span class="pill" id="strategy-pill">策略加载中…</span>
+        <button class="btn ghost" id="btn-reset" title="重置演示数据">重置演示</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="filterbar" aria-label="筛选">
+        <label class="field">
+          <span>业务日期</span>
+          <input type="date" id="f-asof" />
+        </label>
+        <label class="field">
+          <span>仓库</span>
+          <select id="f-warehouse"><option value="">全部仓库</option></select>
+        </label>
+        <label class="field">
+          <span>品类</span>
+          <select id="f-category"><option value="">全部品类</option></select>
+        </label>
+        <label class="field">
+          <span>可用量口径</span>
+          <select id="f-caliber"></select>
+        </label>
+        <label class="field">
+          <span>策略</span>
+          <select id="f-strategy"></select>
+        </label>
+        <div class="spacer"></div>
+        <div class="seg" role="tablist" aria-label="视图">
+          <button role="tab" class="seg-btn active" data-view="analysis">呆滞分析</button>
+          <button role="tab" class="seg-btn" data-view="strategy">策略变更</button>
+          <button role="tab" class="seg-btn" data-view="tasks">处置任务</button>
+          <button role="tab" class="seg-btn" data-view="ledger">流水与迟到销售</button>
+        </div>
+      </section>
+
+      <section id="view-analysis" class="view active">
+        <div class="stat-grid" id="stat-grid"></div>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>库存时间线</h2>
+            <div class="legend" id="timeline-legend"></div>
+          </div>
+          <p class="card-sub" id="timeline-sub">按批次回放入库、销售、退货、调拨与处置，展示在手 / 可用 / 临期风险 / 残损</p>
+          <div class="chart-wrap">
+            <svg id="timeline" role="img" aria-label="库存时间线"></svg>
+            <div class="tooltip" id="timeline-tip" role="status" aria-live="polite"></div>
+          </div>
+          <div class="scope-row">
+            <label class="field compact">
+              <span>下钻</span>
+              <select id="f-batch"><option value="">全部批次</option></select>
+            </label>
+            <span class="muted" id="timeline-note"></span>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>呆滞候选与原因</h2>
+            <div class="head-actions">
+              <span class="muted" id="cand-count"></span>
+              <button class="btn" id="btn-bulk-plan">将本页计划加入审批</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="table" id="cand-table">
+              <thead>
+                <tr>
+                  <th>批次 / SKU</th>
+                  <th>仓库</th>
+                  <th class="num">数量</th>
+                  <th class="num">库龄</th>
+                  <th class="num">剩余保质</th>
+                  <th>候选原因</th>
+                  <th>建议</th>
+                  <th class="num">风险</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card" id="detail-card" hidden>
+          <div class="card-head">
+            <h2 id="detail-title">批次详情</h2>
+            <button class="btn ghost" id="btn-close-detail">关闭</button>
+          </div>
+          <div id="detail-body"></div>
+        </section>
+      </section>
+
+      <section id="view-strategy" class="view">
+        <div class="two-col">
+          <section class="card">
+            <div class="card-head"><h2>策略版本</h2></div>
+            <div id="strategy-list" class="stack"></div>
+            <div class="card-head mt"><h2>新建策略版本</h2></div>
+            <form id="strategy-form" class="form-grid"></form>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <h2>切换预览</h2>
+              <span class="muted" id="compare-hint">选择目标策略以查看迁移影响</span>
+            </div>
+            <div id="compare-body" class="stack"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="view-tasks" class="view">
+        <section class="card">
+          <div class="card-head">
+            <h2>处置计划与审批</h2>
+            <div class="head-actions">
+              <select id="f-plan-status" class="mini">
+                <option value="">全部状态</option>
+                <option value="pending_approval">待审批</option>
+                <option value="approved">已审批</option>
+                <option value="executed">已执行</option>
+                <option value="rolled_back">已回滚</option>
+                <option value="rejected">已驳回</option>
+              </select>
+            </div>
+          </div>
+          <div id="plan-list" class="stack"></div>
+        </section>
+      </section>
+
+      <section id="view-ledger" class="view">
+        <div class="two-col">
+          <section class="card">
+            <div class="card-head">
+              <h2>迟到销售（不重复扣减）</h2>
+              <span class="muted">按原业务日期回填，已处置批次不被追溯占用</span>
+            </div>
+            <div id="late-sales" class="stack"></div>
+          </section>
+          <section class="card">
+            <div class="card-head"><h2>入库/退货/调拨流水</h2></div>
+            <div id="ingest-log" class="stack small"></div>
+          </section>
+        </div>
+        <section class="card">
+          <div class="card-head"><h2>审计轨迹</h2></div>
+          <div id="audit-log" class="stack small"></div>
+        </section>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>

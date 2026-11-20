@@ -1,0 +1,16 @@
+{
+  "name": "inventory-obsolescence",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Inventory obsolescence analysis with multi-caliber availability, strategy migration preview, and versioned disposal tasks.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "seed": "node scripts/seed.js",
+    "test": "node --test tests/domain.test.js tests/api.test.js"
+  },
+  "engines": {
+    "node": ">=22.5"
+  }
+}
